@@ -1,0 +1,139 @@
+__scope = function()
+
+    globals.MiniTest = {}
+    MiniTest._tests = []
+    MiniTest._testSetup = null
+    MiniTest._testTeardown = null
+    MiniTest._hdr_printed = false
+
+    isGH = globals.hasIndex("isGH") // use colours if set.
+    ifGH = function(s)
+        if isGH then return s
+        return ""
+    end function
+    stacktrace = function(); return ""; end function
+    if globals.hasIndex("__Intrinsics") and globals.__Intrinsics.hasIndex("stackTrace") then stacktrace = function()
+        return "\n" + globals.__Intrinsics.stackTrace[1:].join("\n")
+    end function
+    OK     = ifGH("<color=#4fd2e0>")
+    OK_E   = ifGH("</color>")
+    ERR    = ifGH("<color=""red"">")
+    ERR_E  = ifGH("</color>")
+    DATA   = ifGH("<color=#bfb360>")
+    DATA_E = ifGH("</color>")
+    BDATA  = ifGH("<color=#ab591f>")
+    BDATA_E= ifGH("</color>")
+    NOTE   = ifGH("<i><color=#4375d1>")
+    NOTE_E = ifGH("</color></i>")
+    NAME   = ifGH("<b>")
+    NAME_E = ifGH("</b>")
+    globals.TEST = function(str, func)
+        MiniTest._tests.push([str, @func, @MiniTest._testSetup, @MiniTest._testTeardown])
+        return MiniTest
+    end function
+
+    globals.TEST_SETUP = function(func)
+        MiniTest._testSetup = @func
+    end function
+
+    globals.TEST_TEARDOWN = function(func)
+        MiniTest._testTeardown = @func
+    end function
+
+    _print_error = function(s = null, terminate = false)
+        if not MiniTest._hdr_printed then print NAME + MiniTest._current + NAME_E + " - " + ERR + "FAILED" + ERR_E
+        MiniTest._hdr_printed = true
+        if s then print s + "\n"
+        if terminate then exit
+    end function
+    globals.minitest_print_error = @_print_error
+
+    globals.RUN_ALL_TESTS = function(verbose = true, retainTests = false)
+        globals.MINITEST_RUNNING = true
+        for test in MiniTest._tests
+            MiniTest._current = test[0]
+            if @test[2] then test[2]()
+            test[1]()
+            if @test[3] then test[3]()
+            if verbose and not MiniTest._hdr_printed then print(NAME + test[0] + NAME_E + " - " + OK + "PASSED" + OK_E)
+            MiniTest._hdr_printed = false
+        end for
+        globals.MINITEST_RUNNING = false
+        MiniTest._current = null
+        if not retainTests then
+            MiniTest._tests = []
+            MiniTest._testSetup = null
+            MiniTest._testTeardown = null
+        end if
+    end function
+
+    _checkMatch = function(actual, expected, note = "", isEq = true, isExpect = false, isIsa = false)
+        if isEq and ((isIsa and actual isa expected) or (not isIsa and actual == expected)) then return
+        if not isEq and ((isIsa and not actual isa expected) or (not isIsa and actual != expected)) then return
+        s = "ed: " + DATA + expected + DATA_E + "\n  actual: " + BDATA + actual + BDATA_E
+        if isEq then s = "expect" + s
+        if not isEq then s = "unwant" + s
+        if note then s = s + "\n  note: " + NOTE + note + NOTE_E
+        s = s + stacktrace
+        _print_error s, not isExpect
+    end function
+
+    globals.assertEqual = function(actual, expected, note = "")
+        return _checkMatch(actual, expected, note)
+    end function
+    globals.expectEqual = function(actual, expected, note = "")
+        return _checkMatch(actual, expected, note, true, true)
+    end function
+
+    globals.assertNotEq = function(actual, expected, note = "")
+        return _checkMatch(actual, expected, note, false)
+    end function
+    globals.expectNotEq = function(actual, expected, note = "")
+        return _checkMatch(actual, expected, note, false, true)
+    end function
+
+    globals.assertIsa = function(actual, expected, note = "")
+        return _checkMatch(actual, expected, note, true, false, true)
+    end function
+    globals.expectIsa = function(actual, expected, note = "")
+        return _checkMatch(actual, expected, note, true, true, true)
+    end function
+
+    globals.assertIsnt = function(actual, expected, note = "")
+        return _checkMatch(actual, expected, note, false, false, true)
+    end function
+    globals.expectIsnt = function(actual, expected, note = "")
+        return _checkMatch(actual, expected, note, false, true, true)
+    end function
+
+    globals.assertTrue = function(actual, note = "")
+        return assertEqual(actual, true, note)
+    end function
+    globals.expectTrue = function(actual, note = "")
+        return expectEqual(actual, true, note)
+    end function
+
+    globals.assertTruthy = function(actual, note = "")
+        return assertEqual(actual != false and actual != null, true, note)
+    end function
+    globals.expectTruthy = function(actual, note = "")
+        return expectEqual(actual != false and actual != null, true, note)
+    end function
+
+    globals.assertFalse = function(actual, note = "")
+        return assertEqual(actual, false, note)
+    end function
+    globals.expectFalse = function(actual, note = "")
+        return expectEqual(actual, false, note)
+    end function
+
+    globals.assertNull = function(actual, note = "")
+        return assertEqual(actual, null, note)
+    end function
+    globals.expectNull = function(actual, note = "")
+        return expectEqual(actual, null, note)
+    end function
+
+end function
+if not globals.hasIndex("MiniTest") then __scope()
+__scope = null
