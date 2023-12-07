@@ -47,7 +47,7 @@ All these functions accept an optional final argument which should be a string. 
 
 MiniMock enables you to generate mocks from existing `map` objects, define your own from scratch, or a mixture of both. A Mock requires that functions be called in the order you set them up. MiniMock will terminate with an error if calls occur out of order or if a call is made that is unexpected.
 
-MiniMock currently supports functions taking up to **7** parameters. Modifying the source code to handle more than this is trivial, should you need to do so.
+MiniMock currently supports functions taking up to **8** parameters. Modifying the source code to handle more than this is trivial, should you need to do so.
 
 ### Creating and Using an Instance of a Mock
 

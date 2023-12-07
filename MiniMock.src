@@ -14,18 +14,26 @@ BARG   = ifGH("<color=#ff4203>")
 BARG_E = ifGH("</color>")
 FUNC   = ifGH("<b><color=#3644a3>")
 FUNC_E = ifGH("</color></b>")
+SITE   = ifGH("<color=#452166>")
+SITE_E = ifGH("</color>")
+LF = char(10)
 stacktrace = function(); return ""; end function
 if globals.hasIndex("__Intrinsics") and globals.__Intrinsics.hasIndex("stackTrace") then stacktrace = function()
-	return "\n" + globals.__Intrinsics.stackTrace[1:].join("\n")
+	return LF + globals.__Intrinsics.stackTrace[2:].join(LF)
+end function
+if globals.hasIndex("IS_GREYBEL") then stacktrace = function()
+    return LF + include_lib("/lib/testlib.so").get_stack_trace[2:].join(LF)
 end function
 MiniMock.__mockCall = function(actualParams, funcName)
 	if self._expect.len == 0 or funcName != self._expect[0].target then
 		s = ERR + "Fatal error, unexpected call to " + FUNC + funcName + FUNC_E + ":" + ERR_E +
-		    "\n      params: " + DATA + actualParams + DATA_E
+		    LF + "      params: " + DATA + actualParams + DATA_E
 		for expect in self._expect
-			s = s + "\n      expecting: " + FUNC + expect.target + FUNC_E +
-			        "\n         params: " + DATA + expect.params + DATA_E
+			s = s + LF + "      expecting: " + FUNC + expect.target + FUNC_E +
+			        LF + "         params: " + DATA + expect.params + DATA_E
+			if expect.expectedAt != "" then s = s + LF + "  registered at: " + SITE + expect.expectedAt + SITE_E
 		end for
+		if self.__builtAt then s = s + LF + "  created at: " + SITE + self.__builtAt + SITE_E
 		s = s + stacktrace
 		if MINITEST_RUNNING then minitest_print_error(s, true)
 		print s
@@ -36,10 +44,11 @@ MiniMock.__mockCall = function(actualParams, funcName)
 	if expectedArgCnt != actualParams.len then
 		s = ERR + "Fatal error, wrong argument count:" + ERR_E
 		if actualParams.len > 0 then s = s +
-		    "\n      params: " + DATA + actualParams + DATA_E
-		s = s + "\n    expected: " + DATA + expectedArgCnt + DATA_E + " args" +
-		        "\n      actual: " + DATA + actualParams.len + DATA_E + " args" +
-		    	"\nexpecting function: " + FUNC + expected.target + FUNC_E
+		    LF + "      params: " + DATA + actualParams + DATA_E
+		s = s + LF + "    expected: " + DATA + expectedArgCnt + DATA_E + " args" +
+		        LF + "      actual: " + DATA + actualParams.len + DATA_E + " args" +
+			LF + "expecting function: " + FUNC + expected.target + FUNC_E
+		if expected.expectedAt != "" then s = s + LF + "     registered at: " + SITE + expected.expectedAt + SITE_E
 		s = s + stacktrace
 		if MINITEST_RUNNING then minitest_print_error(s, true)
 		print s
@@ -47,9 +56,10 @@ MiniMock.__mockCall = function(actualParams, funcName)
 	end if
 	for i in expected.params.indexes
 		if not expected.params[i] == MiniMock.Any and expected.params[i] != actualParams[i] then
-			s = "Error In expected call to " + FUNC + expected.target + FUNC_E + "\n"
-			s = s + "    expected args: " + DATA + expected.params + DATA_E + "\n"
+			s = "Error In expected call to " + FUNC + expected.target + FUNC_E + LF
+			s = s + "    expected args: " + DATA + expected.params + DATA_E + LF
 			s = s + "      actual args: " + BARG + actualParams + BARG_E
+			if expected.expectedAt != "" then s = s + LF + "    registered at: " + SITE + expected.expectedAt + SITE_E
 			s = s + stacktrace
 			p = @print
 			if MINITEST_RUNNING then p = @minitest_print_error
@@ -64,41 +74,46 @@ MiniMock.__mockCall = function(actualParams, funcName)
 end function
 
 MiniMock.genFunc = function(paramCount, funcName)
-	locals.self = self
+	this = self
 	locals.funcName = @funcName
 	funcs = []
 	f = function()
-		return outer.self.__mockCall([], outer.funcName)
+		return this.__mockCall([], outer.funcName)
 	end function
 	funcs.push @f
 	f = function(a)
-		return outer.self.__mockCall([@a], outer.funcName)
+		return this.__mockCall([@a], outer.funcName)
 	end function
 	funcs.push @f
 	f = function(a, b)
-		return outer.self.__mockCall([@a, @b], outer.funcName)
+		return this.__mockCall([@a, @b], outer.funcName)
 	end function
 	funcs.push @f
 	f = function(a, b, c)
-		return outer.self.__mockCall([@a, @b, @c], outer.funcName)
+		return this.__mockCall([@a, @b, @c], outer.funcName)
 	end function
 	funcs.push @f
 	f = function(a, b, c, d)
-		return outer.self.__mockCall([@a, @b, @c, @d], outer.funcName)
+		return this.__mockCall([@a, @b, @c, @d], outer.funcName)
 	end function
 	funcs.push @f
 	f = function(a, b, c, d, e)
-		return outer.self.__mockCall([@a, @b, @c, @d, @e], outer.funcName)
+		return this.__mockCall([@a, @b, @c, @d, @e], outer.funcName)
 	end function
 	funcs.push @f
 	f = function(a, b, c, d, e, f)
-		return outer.self.__mockCall([@a, @b, @c, @d, @e, @f], outer.funcName)
+		return this.__mockCall([@a, @b, @c, @d, @e, @f], outer.funcName)
 	end function
 	funcs.push @f
 	f = function(a, b, c, d, e, f, g)
-		return outer.self.__mockCall([@a, @b, @c, @d, @e, @f, @g], outer.funcName)
+		return this.__mockCall([@a, @b, @c, @d, @e, @f, @g], outer.funcName)
 	end function
 	funcs.push @f
+	f = function(a, b, c, d, e, f, g, h)
+		return this.__mockCall([@a, @b, @c, @d, @e, @f, @g, @h], outer.funcName)
+	end function
+	funcs.push @f
+	if funcs.len <= paramCount then exit("MiniMock: Fatal Error: No wrapper defined for " + paramCount + " params")
 	// Add more as needed.
 	return @funcs[paramCount]
 end function
@@ -147,6 +162,7 @@ end function
 
 MiniMock.build = function(mapToMock)
 	map = {"__isa": mapToMock, "_expect": [], "_argCnt": {}}
+	map.__builtAt = stacktrace.split(LF)[2]
 	for kv in self
 		map[@kv.key] = @kv.value
 	end for
@@ -155,13 +171,15 @@ end function
 
 Expect = {}
 
-Expect.build = function(funcName, argCnt)
+Expect.build = function(funcName, argCnt, mock)
 	ret = new Expect
 	ret.target = funcName
 	ret.params = []
 	ret.argCnt = argCnt
 	ret.clbk = null
 	ret.retVal = null
+	ret.mock = mock
+	ret.expectedAt = stacktrace.split(LF)[3]
 	return ret
 end function
 
@@ -171,9 +189,10 @@ Expect.withParams = function(params)
 	if not params isa list then params = [params]
 	if params.len != self.argCnt then
 		s = ERR + "FATAL ERROR: Your test is passing the wrong arg quantity" + ERR_E +
-		"\n    function: " + FUNC + self.target + FUNC_E +
-		"\n    expected: " + DATA + self.argCnt + DATA_E + " args" +
-		"\n      actual: " + DATA + params.len + DATA_E + " args"
+		LF + "    function: " + FUNC + self.target + FUNC_E +
+		LF + "    expected: " + DATA + self.argCnt + DATA_E + " args" +
+		LF + "      actual: " + DATA + params.len + DATA_E + " args"
+		if self.mock.__builtAt then s = s + LF + "  created at: " + SITE + self.mock.__builtAt + SITE_E
 		s = s + stacktrace
 		if MINITEST_RUNNING then minitest_print_error(s, true)
 		print s
@@ -196,13 +215,14 @@ end function
 MiniMock.expectCall = function(self, funcName)
 	if not self._argCnt.hasIndex(funcName) then
 		s = ERR + "FATAL ERROR: Your test is trying to expect a call to a non-existent function" + ERR_E +
-		"\n    function: " + FUNC + funcName + FUNC_E
+		LF + "    function: " + FUNC + funcName + FUNC_E
+		if self.__builtAt then s = s + LF + "  created at: " + SITE + self.__builtAt + SITE_E
 		s = s + stacktrace
 		if MINITEST_RUNNING then minitest_print_error(s, true)
 		print s
 		exit()
 	end if
-	ret = Expect.build(funcName, self._argCnt[funcName])
+	ret = Expect.build(funcName, self._argCnt[funcName], self)
 	self._expect.push(ret)
 	return ret
 end function
@@ -212,9 +232,11 @@ MiniMock.getResult = function(self)
 	if self._expect.len == 0 then return true
 	ret = "Error: Unfulfilled call(s):"
 	for call in self._expect
-		ret = ret + "\n    callee: " + FUNC + call.target + FUNC_E
-		if call.params.len > 0 then ret = ret + "\n    params: " + DATA + call.params + DATA_E
+		ret = ret + LF + "       callee: " + FUNC + call.target + FUNC_E
+		if call.params.len > 0 then ret = ret + LF + "       params: " + DATA + call.params + DATA_E
+		if call.expectedAt != "" then ret = ret + LF + "registered at: " + SITE + call.expectedAt + SITE_E
 	end for
+	if self.__builtAt then ret = ret + LF + "  created at: " + SITE + self.__builtAt + SITE_E
 	ret = ret + stacktrace
 	return ret
 end function
