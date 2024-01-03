@@ -123,7 +123,7 @@ MiniMock._addMockFunc = function(kv)
 	//handle pathological case of default arg containing a comma
 	while funcSig.indexOf("""") != null
 		startQuote = funcSig.indexOf("""")
-		endQuote = funcSig.indexOf("""", startQuote + 1)
+		endQuote = funcSig.indexOf("""", startQuote)
 		funcSig = funcSig[0:startQuote] + funcSig[endQuote+1:]
 	end while
 	paramCount = 1
